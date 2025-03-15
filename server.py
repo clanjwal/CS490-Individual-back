@@ -158,22 +158,18 @@ def rent_film():
     customer_id = data.get("customer_id")
     film_id = data.get("film_id")
 
-    # Step 1: Validate customer_id and film_id
     if not customer_id or not film_id:
         return jsonify({"error": "customer_id and film_id are required."}), 400
 
     try:
-        # Ensure film_id is an integer (in case it's passed as a string)
         film_id = int(film_id)
         customer_id = int(customer_id)
     except ValueError:
         return jsonify({"error": "Invalid data. customer_id and film_id must be integers."}), 400
 
-    # Step 2: Connect to the database
     conn = mysql.connection
     cursor = conn.cursor()
 
-    # Step 3: Check if there are any available copies of the film
     query = """
     SELECT DISTINCT I.inventory_id
     FROM rental AS R, store AS S, inventory AS I, film AS F
@@ -193,7 +189,6 @@ def rent_film():
 
         print(inventory_id)
 
-        # Step 4: Create a rental record in the rental table
         rental_date = datetime.now()
         formatted_rental_date = rental_date.strftime('%Y-%m-%d %H:%M:%S')
         query_rental = """
@@ -215,7 +210,6 @@ def rent_film():
         return jsonify({"success": "Film rented successfully!"})
 
     except Exception as e:
-        # Log the exception if needed and handle database errors
         print(f"Database error: {str(e)}")
         return jsonify({"error": "An error occurred while processing the rental."}), 500
     
@@ -224,19 +218,15 @@ def return_film(rental_id):
     data = request.get_json()
 
     print(data)
-    # Extract customer_id, film_id, and return_date from the request body
     customer_id = data.get('customer_id')
     film_id = data.get('film_id')
 
-    # Step 1: Validate customer_id and film_id
     if not customer_id or not film_id:
         return jsonify({"error": "customer_id and film_id are required."}), 400
 
-    # Step 2: Connect to the database
     conn = mysql.connection
     cursor = conn.cursor()
 
-    # Step 3: Check if the rental exists for the given customer_id and film_id
     query = """
     SELECT R.rental_id, R.inventory_id
     FROM rental AS R
@@ -253,11 +243,8 @@ def return_film(rental_id):
 
     # rental_id = rental[0]
     inventory_id = rental[1]
-
-    # Step 4: Update the rental table with the return date
     return_date = datetime.now()
 
-    # Ensure the return date is in the correct format (YYYY-MM-DD HH:MM:SS)
     formatted_return_date = return_date.strftime('%Y-%m-%d %H:%M:%S')
     
     update_query = """
@@ -271,11 +258,9 @@ def return_film(rental_id):
         cursor.close()
         return jsonify({"success": "Film returned successfully!"})
     except Exception as e:
-        # Log the exception if needed and handle database errors
         print(f"Database error: {str(e)}")
         return jsonify({"error": "An error occurred while processing the return."}), 500
 
-# new query for now (change for MS3), feature 7
 @app.route('/displaycustomers', methods=['GET'])
 def displaycustomers():
     # Dealing with pages
@@ -297,14 +282,12 @@ def displaycustomers():
     ORDER BY customer_id
     LIMIT %s OFFSET %s;
     """
-
-    # Execute the query
     cursor.execute(query, (per_page, offset))
     customers = cursor.fetchall()
 
     cursor.close()
 
-    # Convert list to JSON and include customer_id
+    # Convert list to JSON
     customer_list = [{"customer_id": c[0], "first_name": c[1], "last_name": c[2]} for c in customers]
 
     return jsonify({"customers": customer_list, "total_pages": total_pages})
@@ -378,7 +361,6 @@ def add_customer():
     conn = mysql.connection
     cursor = conn.cursor()
 
-    # Insert the customer into the database
     insert_customer = """
     INSERT INTO customer (store_id, first_name, last_name, email, address_id)
     VALUES (1, %s, %s, %s, 1);
@@ -422,7 +404,6 @@ def delete_customer(customer_id):
     cursor.execute(delete_rental_query, (customer_id,))
     conn.commit()
 
-    # Finally, delete the customer
     delete_customer_query = "DELETE FROM customer WHERE customer_id = %s"
     cursor.execute(delete_customer_query, (customer_id,))
     conn.commit()
@@ -438,7 +419,6 @@ def get_customer_details(customer_id):
     conn = mysql.connection
     cursor = conn.cursor()
 
-    # Query to fetch customer details by ID
     query = """
     SELECT C.customer_id, C.first_name, C.last_name, C.email, C.create_date, R.rental_id, F.title, R.return_date, F.film_id
     FROM rental as R, customer as C, inventory as I, film as F
